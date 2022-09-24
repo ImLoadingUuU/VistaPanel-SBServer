@@ -1,12 +1,7 @@
 //CONFIG
-const port = 3000
-const info = {  
-    username: process.env.username,
-    password: process.env.password,
-    debug: false
-}
+const port = 3001
 //CONFIG END
-require('dotenv').config()
+require('dotenv').config();
 const Express = require('express');
 const Querystring = require('querystring');
 const Http = require('http');
@@ -84,7 +79,11 @@ const landing = `
 Landing Page Comming Soon.
 `
 const app = Express();
-
+const info = {
+    username: process.env.username,
+    password: process.env.password,
+    debug: false
+};
 if (info.debug) {
     console.log(`Running API With Username ${info.username} and Password is ${info.password},You can disable showing this by Setting Debug to false`)
 }
@@ -99,26 +98,7 @@ var cfg = {
         "Content-Type": "application/json"
     }
 }
-app.use(bodyParser.urlencoded({extended: false}))
-app.get('/',function (req, res) {
-    res.send(landing)
-})
-app.post('/main', async function(req, res) {
-    console.log("Hello")
-   if (req.body) {
-    console.log("OK!")
-    // User Client Config
-    var config = {
-        type: "external",
-        domain: req.body.domain,
-        apiUrl: req.body.ftp_host,
-        lang: "en",
-        username: req.body.ftp_user,
-        password: req.body.ftp_password,
-        uploadDir: req.body.builder_upload
-    }
-    // Options of HTTP
-
+function requestLogin(config, OnDone) {
     var cfg = {
         url: 'http://site.pro/api/requestLogin',
         method: 'POST',
@@ -127,29 +107,104 @@ app.post('/main', async function(req, res) {
             'Content-Type': "application/json"
         },
         auth: {
-             username: info.username,
-             password: info.password
+            username: info.username,
+            password: info.password
         },
         data: JSON.stringify(config)
-    }
-     console.log("Sending HTTP...")
-     console.log(req.body)
-      axios(cfg).then(function (response) {
-        console.log("Sended")
-       res.send(util.format(success,response.data.url))
-        console.log(response.data)
-         
-       }).catch(txt => { 
-        console.log(txt.response)
+    };
+
+    axios(cfg).then(function (response) {
+        console.log("Sended");
+        OnDone({
+            url: response.data.url
+        });
+    }).catch(txt => {
+        console.log(txt.response);
         console.log(`[ERROR] Failed to Connect API ${txt.response.status} `)
-    if (txt.response.data.error.message == "License not found. Please contact your hosting support.") {
-        console.log("[WARN] Please Allow This IP in Site.Pro Controls")
-    } 
-          res.send(util.format(errtemplate,txt.code,txt.response.status,txt.response.data.error.message))
-       })
+        if (txt.response.data.error.message == "License not found. Please contact your hosting support.") {
+            console.log("[WARN] Please Allow This IP in Site.Pro Controls")
+        }
+        OnDone({
+            statuscode: txt.response.code,
+            code: txt.code,
+            reason: txt.response.data.error.message
+        });
+
+        // End of Error Catcher
+    });
 
 
-   }
+} // Function End
+// Pages
+app.use(bodyParser.urlencoded({ extended: false }))
+app.get('/', function (req, res) {
+    res.send(landing)
+})
+app.post("/json", function (req, res) {
+    //
+    if (req.body) {
+        console.log("OK!");
+        // User Client Config
+        var config = {
+            type: "external",
+            domain: req.body.domain,
+            apiUrl: req.body.ftp_host,
+            lang: "en",
+            username: req.body.ftp_user,
+            password: req.body.ftp_password,
+            uploadDir: req.body.builder_upload
+        };
+        // Options of HTTP
+        var a = requestLogin(config,function (data) {
+            if (data.reason) {
+                res.json({
+                    success: false,
+                    error: {
+                        message: data.reason
+                    },
+                })
+            } else if (data.url) {
+                res.json({
+                    success: true,
+                    error: {
+
+                    },
+                    url: data.url
+                });
+            }
+        });
+
+
+
+    }
+    //
+});
+app.post('/main', async function (req, res) {
+    console.log("Hello");
+    if (req.body) {
+        console.log("OK!");
+        // User Client Config
+        var config = {
+            type: "external",
+            domain: req.body.domain,
+            apiUrl: req.body.ftp_host,
+            lang: "en",
+            username: req.body.ftp_user,
+            password: req.body.ftp_password,
+            uploadDir: req.body.builder_upload
+        };
+        // Options of HTTP
+        var a = requestLogin(config, function (data) {
+            if (data.reason) {
+                res.send(util.format(errtemplate, data.code, data.statuscode, data.reason));
+            } else if (data.url) {
+                res.send(success, data.url);
+            }
+        });
+
+
+
+    }
 })
 app.listen(port)
-console.log("Running")
+console.log(`Running on ${port} Ports...`)
