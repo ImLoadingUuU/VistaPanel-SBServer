@@ -6,6 +6,7 @@ const Express = require('express');
 const Querystring = require('querystring');
 const Http = require('http');
 const { json } = require('express');
+const path = require('path');
 const axios = require('axios').default;
 const util = require('util');
 const bodyParser = require('body-parser');
@@ -79,6 +80,7 @@ const landing = `
 Landing Page Comming Soon.
 `
 const app = Express();
+
 const info = {
     username: process.env.username,
     password: process.env.password,
@@ -87,7 +89,7 @@ const info = {
 if (info.debug) {
     console.log(`Running API With Username ${info.username} and Password is ${info.password},You can disable showing this by Setting Debug to false`)
 }
-
+app.use(Express.static('public'));
 var Encoded = Buffer.from(`${info.username}:${info.password}`).toString("base64")
 var cfg = {
     hostname: 'http://site.pro/',
@@ -136,25 +138,18 @@ function requestLogin(config, OnDone) {
 
 } // Function End
 // Pages
-app.use(bodyParser.urlencoded({ extended: false }))
-app.get('/', function (req, res) {
-    res.send(landing)
-})
+app.use(bodyParser.urlencoded({ extended: false }));
 app.post("/json", function (req, res) {
+    //
+    console.log(`["JSON API"] IP: ${req.ip}`)
     //
     if (req.body) {
         console.log("OK!");
         // User Client Config
-        var config = {
-            type: "external",
-            domain: req.body.domain,
-            apiUrl: req.body.ftp_host,
-            lang: "en",
-            username: req.body.ftp_user,
-            password: req.body.ftp_password,
-            uploadDir: req.body.builder_upload
-        };
         // Options of HTTP
+        console.log(req.body)
+        var config = req.body
+
         var a = requestLogin(config,function (data) {
             if (data.reason) {
                 res.json({
@@ -162,7 +157,7 @@ app.post("/json", function (req, res) {
                     error: {
                         message: data.reason
                     },
-                })
+                });
             } else if (data.url) {
                 res.json({
                     success: true,
@@ -171,6 +166,7 @@ app.post("/json", function (req, res) {
                     },
                     url: data.url
                 });
+    
             }
         });
 
@@ -181,6 +177,7 @@ app.post("/json", function (req, res) {
 });
 app.post('/main', async function (req, res) {
     console.log("Hello");
+    console.log(`["MAIN API"] IP: ${req.ip}`)
     if (req.body) {
         console.log("OK!");
         // User Client Config
@@ -205,6 +202,8 @@ app.post('/main', async function (req, res) {
 
 
     }
-})
-app.listen(port)
+});
+
+
+app.listen(port);
 console.log(`Running on ${port} Ports...`)
