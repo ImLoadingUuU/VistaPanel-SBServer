@@ -81,10 +81,19 @@ const landing = `
 Landing Page Comming Soon.
 `
 const app = Express();
-app.use(cors)
+app.use(cors({
+    origin: [
+        "http:/localhost:3000",
+        "http://cpanel.share.sitenexus.me",
+        "https://cpanel.share.sitenexus.me",
+        "https://cpanel.epizy.com"
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: ['Content-Type', 'Authorization']
+}))
 const info = {
-    username: process.env.username,
-    password: process.env.password,
+    username: "apikey0",
+    password: "wcctObW2am4XD02Qd9Sf9nWJiRWNASe.dYrDxgFUQ1UOrunl",
     debug: false
 };
 if (info.debug) {
@@ -122,7 +131,6 @@ function requestLogin(config, OnDone) {
             url: response.data.url
         });
     }).catch(txt => {
-        console.log(txt.response);
         console.log(`[ERROR] Failed to Connect API ${txt.response.status} `)
         if (txt.response.data.error.message == "License not found. Please contact your hosting support.") {
             console.log("[WARN] Please Allow This IP in Site.Pro Controls")
@@ -139,16 +147,16 @@ function requestLogin(config, OnDone) {
 
 } // Function End
 // Pages
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.post("/json", function (req, res) {
     //
-    console.log(`["JSON API"] IP: ${req.ip}`)
+    
     //
     if (req.body) {
         console.log("OK!");
         // User Client Config
         // Options of HTTP
-        console.log(req.body)
+    
         var config = req.body
 
         var a = requestLogin(config,function (data) {
@@ -181,6 +189,7 @@ app.post('/main', async function (req, res) {
     console.log(`["MAIN API"] IP: ${req.ip}`)
     if (req.body) {
         console.log("OK!");
+        console.log(req.body)
         // User Client Config
         var config = {
             type: "external",
@@ -189,14 +198,20 @@ app.post('/main', async function (req, res) {
             lang: "en",
             username: req.body.ftp_user,
             password: req.body.ftp_password,
-            uploadDir: req.body.builder_upload
+            uploadDir: req.body.uploadDir
         };
         // Options of HTTP
         var a = requestLogin(config, function (data) {
             if (data.reason) {
-                res.send(util.format(errtemplate, data.code, data.statuscode, data.reason));
+                res.json({
+                    success: false,
+                    message: data.reason
+                })
             } else if (data.url) {
-                res.send(success, data.url);
+                res.json({
+                    success: true,
+                    url: data.url
+                })
             }
         });
 
