@@ -11,7 +11,6 @@ const axios = require('axios').default;
 const util = require('util');
 const bodyParser = require('body-parser');
 const cors = require("cors")
-app.use(cors)
 const errtemplate = `
 <!DOCTYPE html>
 <html lang="en">
@@ -82,7 +81,7 @@ const landing = `
 Landing Page Comming Soon.
 `
 const app = Express();
-
+app.use(cors)
 const info = {
     username: process.env.username,
     password: process.env.password,
