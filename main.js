@@ -10,6 +10,8 @@ const path = require('path');
 const axios = require('axios').default;
 const util = require('util');
 const bodyParser = require('body-parser');
+const cors = require("cors")
+app.use(cors)
 const errtemplate = `
 <!DOCTYPE html>
 <html lang="en">
